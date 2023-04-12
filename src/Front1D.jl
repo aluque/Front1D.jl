@@ -17,7 +17,9 @@ const IONIZATION_FIELD = 2e7
 const ATTACHMENT_ALPHA = 2000.0
 const ATTACHMENT_FIELD = 3e6
 
-function main(;n=8000, H=0.08, R=.3e-3, nstr=5, L=4e-2, eb=2.5e6, start=2e-3)
+include("naidis.jl")
+
+function main(;n=8000, H=0.08, R=1e-3, nstr=5, L=4e-2, eb=2.5e6, start=2e-3, tend=15e-9)
     T = Float64
     plt.matplotlib.pyplot.style.use("granada")
 
@@ -38,7 +40,7 @@ function main(;n=8000, H=0.08, R=.3e-3, nstr=5, L=4e-2, eb=2.5e6, start=2e-3)
     
     u0 = ArrayPartition(q0, ne0, ztip0)
 
-    prob = ODEProblem(derivs!, u0, (0.0, 30e-9), (aux, params))
+    prob = ODEProblem(derivs!, u0, (0.0, tend), (aux, params))
     @info "Solving the ODE."
     
     sol = solve(prob, Midpoint(), dtmax=1e-13, saveat=1e-9)
@@ -83,7 +85,7 @@ end
     v::T = 1.3e6
 
     "Electron density inside the streamer"
-    neinside::T = 5e20
+    neinside::T = 1e20
     
     "Constant n0 (to improve)"
     n0::T = neinside * nstr * π * R^2 / L^2
@@ -221,7 +223,7 @@ townsend(eabs) = IONIZATION_ALPHA * exp(-IONIZATION_FIELD / eabs)
 attachment_nu(eabs) = (E_MOBILITY * eabs * ATTACHMENT_ALPHA * exp(-ATTACHMENT_FIELD / eabs))
 effective_nu(eabs) = impact_nu(eabs) - attachment_nu(eabs)
 
-function ionizationint(emax)
+Base.@assume_effects :effect_free @inline function ionizationint(emax)
     return co.epsilon_0 * quadgk(townsend, 0.0, emax)[1] / co.elementary_charge
 end
 
