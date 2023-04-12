@@ -19,7 +19,7 @@ const ATTACHMENT_FIELD = 3e6
 
 include("naidis.jl")
 
-function main(;n=8000, H=0.08, R=1e-3, nstr=5, L=4e-2, eb=2.5e6, start=2e-3, tend=15e-9)
+function main(;n=8000, H=0.08, R=1e-3, nstr=5, L=4e-2, eb=2.5e6, start=5e-3, tend=15e-9)
     T = Float64
     plt.matplotlib.pyplot.style.use("granada")
 
@@ -66,26 +66,26 @@ end
     "Background field"
     eb::T
     
-    "Field over-screening length"
-    k::T = 1 / R
-    
     "Number of streamers"
     nstr::Int
 
     "Cross-sectional area"
     L::T
 
+    "Field over-screening length"
+    k::T = 1 / R
+    
     "Fraction of area covered by streamers"
     alpha::T = L^2 / (nstr * π * R^2)
 
     "Artificial length-scale for ionization"
-    delta::T = R / 4
+    delta::T = R
 
     "Constant velocity (to be improved)"
     v::T = 1.3e6
 
     "Electron density inside the streamer"
-    neinside::T = 1e20
+    neinside::T = 5e21
     
     "Constant n0 (to improve)"
     n0::T = neinside * nstr * π * R^2 / L^2
@@ -185,14 +185,18 @@ function derivs!(du, u, (aux, params), t)
     (dq, dne, dztip) = du.x
 
     (;n, dz, delta, n0, v, nstr, R, L, eb, fix_netip, fix_v) = params
-    (;E, zc) = aux
+    (;E, zc, zf) = aux
     
     poisson!(aux, params, q)
 
-    iztip = searchsortedlast(zc, ztip[])
-    f = (ztip[] - zc[iztip]) / dz
-    qtip = q[iztip] * (1 - f) + q[iztip + 1] * f
-    Etip = qtip * L^2 / (2π * co.epsilon_0 * nstr * R) + eb
+    izctip = searchsortedlast(zc, ztip[])
+    f = (ztip[] - zc[izctip]) / dz
+    qtip = q[izctip] * (1 - f) + q[izctip + 1] * f
+
+
+    # Naive spherical charge.
+    # Etip = qtip * L^2 / (2π * co.epsilon_0 * nstr * R) + eb
+    Etip = maximum(E)
 
     # A variable electron density.
     ne1 = ionizationint(Etip) * nstr * π * R^2 / L^2
