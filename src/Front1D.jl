@@ -18,6 +18,8 @@ const ATTACHMENT_ALPHA = 2000.0
 const ATTACHMENT_FIELD = 3e6
 
 function main(;n=8000, H=0.08, R=.3e-3, nstr=5, L=4e-2, eb=2.5e6, start=2e-3)
+include("naidis.jl")
+
     T = Float64
     plt.matplotlib.pyplot.style.use("granada")
 
@@ -87,6 +89,12 @@ end
     
     "Constant n0 (to improve)"
     n0::T = neinside * nstr * π * R^2 / L^2
+
+    "Set a constant electron density at the tip"
+    fix_netip::Bool = true
+
+    "Set a constant velocity"
+    fix_v::Bool = false
 end
 
 
@@ -176,7 +184,7 @@ function derivs!(du, u, (aux, params), t)
     (q, ne, ztip) = u.x
     (dq, dne, dztip) = du.x
 
-    (;n, dz, delta, n0, v, nstr, R, L, eb) = params
+    (;n, dz, delta, n0, v, nstr, R, L, eb, fix_netip, fix_v) = params
     (;E, zc) = aux
     
     poisson!(aux, params, q)
@@ -185,7 +193,13 @@ function derivs!(du, u, (aux, params), t)
     f = (ztip[] - zc[iztip]) / dz
     qtip = q[iztip] * (1 - f) + q[iztip + 1] * f
     Etip = qtip * L^2 / (2π * co.epsilon_0 * nstr * R) + eb
+
+    # A variable electron density.
     ne1 = ionizationint(Etip) * nstr * π * R^2 / L^2
+    netip = fix_netip ? n0 : ne1
+
+    # A variable velocity
+    v1 = fix_v ? v : velocity(+1, Etip, R)
 
     #@show t Etip ne1
     
@@ -195,11 +209,12 @@ function derivs!(du, u, (aux, params), t)
 
     @tturbo for i in 1:n + 1
         z = dz * (i - 1)
+        
         dne[i] = (effective_nu(E[i]) * ne[i] * erfc((z - ztip[1]) / delta) / 2
-                  + ne1 * v * exp(-(z - ztip[1])^2 / delta^2) / (delta * sqrt(π)))
+                  + netip * v1 * exp(-(z - ztip[1])^2 / delta^2) / (delta * sqrt(π)))        
     end
 
-    dztip[1] = v
+    dztip[1] = v1
 end
 
 
