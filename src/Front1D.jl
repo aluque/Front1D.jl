@@ -10,6 +10,7 @@ using SparseArrays
 using OrdinaryDiffEq
 using QuadGK
 using PyPlot
+using LaTeXStrings
 
 include("model.jl")
 include("naidis.jl")
