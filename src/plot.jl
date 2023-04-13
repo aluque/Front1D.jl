@@ -14,7 +14,7 @@ function plot_field(sol; norm=false, kw...)
         (q, ne, ztip) = u.x
 
         poisson!(aux, params, q)
-        plt.plot(zf, aux.E; kw...)
+        plt.plot(zf ./ co.centi, aux.E; kw...)
     end        
 end
 
@@ -27,7 +27,7 @@ function plot_q(sol; norm=false, kw...)
         (q, ne, ztip) = u.x
         f = norm ? 1 / nstr : oneunit(1 / nstr)
 
-        plt.plot(zc, f * q; kw...)
+        plt.plot(zc ./ co.centi, f * q / 1e-3; kw...)
     end        
 end
 
@@ -40,7 +40,7 @@ function plot_ne(sol; norm=false, kw...)
         (q, ne, ztip) = u.x
         f = norm ? 1 / nstr : oneunit(1 / nstr)
 
-        plt.plot(zf, f * ne; kw...)
+        plt.plot(zf ./ co.centi, f * ne / 1e18; kw...)
     end        
 end
 
@@ -56,7 +56,7 @@ function plot_ztip(sol; kw...)
         imax = argmax(aux.E)
         return zf[imax]
     end
-    plt.plot(sol.t, ztip; kw...)
+    plt.plot(sol.t, ztip ./ co.centi; kw...)
 end
 
 function plot_v(sol; kw...)
@@ -73,4 +73,10 @@ function plot_v(sol; kw...)
     end
     t1 = @. (0.5 * (sol.t[begin:end - 1] + sol.t[begin + 1:end]))
     plt.plot(t1, diff(ztip) ./ diff(sol.t); kw...)
+end
+
+""" Remove xticks from the plot. """
+function noxticks(ax=plt.gca())
+    loc = ax.get_xticks()
+    ax.set_xticklabels(["" for l in loc])
 end
