@@ -95,13 +95,13 @@ A struct to contain the model parameters.
     "Artificial length-scale for ionization"
     delta::T = R
 
-    "Constant velocity (to be improved)"
+    "Constant velocity (if selected)"
     v::T = 1.3e6
 
     "Electron density inside the streamer"
     neinside::T = 5e21
     
-    "Constant n0 (to improve)"
+    "Constant tip electron density (if selected)"
     n0::T = neinside * nstr * π * R^2 / L^2
 
     "Set a constant electron density at the tip"
