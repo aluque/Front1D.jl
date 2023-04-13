@@ -40,7 +40,7 @@ function plot_ne(sol; norm=false, kw...)
         (q, ne, ztip) = u.x
         f = norm ? 1 / nstr : oneunit(1 / nstr)
 
-        plt.plot(zf ./ co.centi, f * ne / 1e18; kw...)
+        plt.plot(zf ./ co.centi, f * ne / 1e17; kw...)
     end        
 end
 

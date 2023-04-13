@@ -24,7 +24,7 @@ The default values of the parameters are those used in the paper.
     dz::T = H / n
     
     "Streamer radius (m)"
-    R::T = 1e-3
+    R::T = 5e-4
 
     "Background field (V/m)"
     eb::T = 2.5e6
@@ -51,10 +51,13 @@ The default values of the parameters are those used in the paper.
     neinside::T = 5e21
     
     "Constant tip electron density (if selected) (1/m3)"
-    n0::T = neinside * nstr * π * R^2 / L^2
+    n0::T = 0.0
+
+    "Linear increase of the tip electron density (1/m4)"
+    nslope::T = 5e18 * nstr
 
     "Electron density in the initial (seed) front (1/m3)"
-    nseed::T = n0 / 100
+    nseed::T = 1e16 * nstr
     
     "Set a constant electron density at the tip"
     fix_netip::Bool = true
@@ -63,7 +66,7 @@ The default values of the parameters are those used in the paper.
     fix_v::Bool = false
 
     "Final simulation time (s)"
-    tend::T = 10e-9
+    tend::T = 30e-9
 end
 
 
@@ -163,7 +166,7 @@ function derivs!(du, u, (aux, params), t)
     (q, ne, ztip) = u.x
     (dq, dne, dztip) = du.x
 
-    (;n, dz, delta, n0, v, nstr, R, L, eb, fix_netip, fix_v) = params
+    (;n, dz, delta, n0, nslope, v, nstr, R, L, eb, fix_netip, fix_v) = params
     (;E, zc, zf) = aux
     
     poisson!(aux, params, q)
@@ -179,7 +182,7 @@ function derivs!(du, u, (aux, params), t)
 
     # A variable electron density.
     ne1 = ionizationint(Etip) * nstr * π * R^2 / L^2
-    netip = fix_netip ? n0 : ne1
+    netip = fix_netip ? (n0 + nslope * ztip[]) : ne1
 
     # A variable velocity
     v1 = fix_v ? v : velocity(+1, Etip, R)

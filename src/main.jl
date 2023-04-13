@@ -43,7 +43,7 @@ function main(;results=[])
 
         plot_ne(sol; norm=true, kw...)
     end
-    plt.ylabel(L"$\bar{n}_e$ (10$^{18}$ m$^{-3}$)")
+    plt.ylabel(L"$\bar{n}_e$ (10$^{17}$ m$^{-3}$)")
     noxticks()
     
     # plot charge
@@ -69,8 +69,8 @@ Run a simulation of the model.
 function simulate(params)
     T = Float64
     
-    @info("Running a simulation with the following parameters:\n\n" *
-          sprint(io -> pretty_print(io, params, 1), context=:color => true))
+    printstyled("Running a simulation with the following parameters:\n\n", color=:light_green)
+    pretty_print(params, 1)
 
     # Pre-allocate axiliary fields
     aux = AuxFields{T}(params)
@@ -87,7 +87,7 @@ function simulate(params)
 
     prob = ODEProblem(derivs!, u0, (0.0, params.tend), (aux, params))
 
-    sol = solve(prob, Midpoint(), dtmax=1e-13, saveat=2e-9)
+    sol = solve(prob, Midpoint(), dtmax=1e-13, saveat=2e-9, progress=true)
     @info "Done."
     
     return sol

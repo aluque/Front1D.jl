@@ -12,6 +12,11 @@ using QuadGK
 using PyPlot
 using LaTeXStrings
 
+using Logging: global_logger
+using TerminalLoggers: TerminalLogger
+global_logger(TerminalLogger())
+
+
 include("model.jl")
 include("naidis.jl")
 include("plot.jl")
