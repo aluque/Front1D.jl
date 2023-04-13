@@ -33,7 +33,9 @@ function main(;n=8000, H=0.08, R=1e-3, nstr=5, L=4e-2, eb=2.5e6, start=5e-3, ten
     end
     
     params = Parameters(;n, H, R, nstr, L, eb)
-    @info "Parameters:\n" * sprint(io -> pretty_print(io, params), context=:color => true)
+    
+    @info("The following parameters are used in the simulation:\n\n" *
+          sprint(io -> pretty_print(io, params, 1), context=:color => true))
     
     
     aux = AuxFields{T}(params)
@@ -87,7 +89,7 @@ A struct to contain the model parameters.
     "Field over-screening length"
     k::T = 1 / R
     
-    "Fraction of area covered by streamers"
+    "1 / fraction of area covered by streamers"
     alpha::T = L^2 / (nstr * π * R^2)
 
     "Artificial length-scale for ionization"
