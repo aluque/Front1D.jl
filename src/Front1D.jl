@@ -19,17 +19,25 @@ const ATTACHMENT_FIELD = 3e6
 
 include("naidis.jl")
 include("plot.jl")
+include("prettyprint.jl")
 
+"""
+Run a simulation of the model.
+"""
 function main(;n=8000, H=0.08, R=1e-3, nstr=5, L=4e-2, eb=2.5e6, start=5e-3, tend=15e-9)
     T = Float64
-    plt.matplotlib.pyplot.style.use("granada")
-
+    try
+        plt.matplotlib.pyplot.style.use("granada")
+    catch exc
+        @warn "Unable to load matplotlib style.  This is fine: pictures will be uglier."
+    end
+    
     params = Parameters(;n, H, R, nstr, L, eb)
-
+    @info "Parameters:\n" * sprint(io -> pretty_print(io, params), context=:color => true)
+    
     
     aux = AuxFields{T}(params)
 
-    @info "Pre-computed data finalized."
     alpha = L^2 / (nstr * π * R^2)
     
     q0 = zeros(n)
@@ -42,15 +50,18 @@ function main(;n=8000, H=0.08, R=1e-3, nstr=5, L=4e-2, eb=2.5e6, start=5e-3, ten
     u0 = ArrayPartition(q0, ne0, ztip0)
 
     prob = ODEProblem(derivs!, u0, (0.0, tend), (aux, params))
-    @info "Solving the ODE."
-    
-    sol = solve(prob, Midpoint(), dtmax=1e-13, saveat=1e-9)
 
+    @info "Solving the ODE."
+    sol = solve(prob, Midpoint(), dtmax=1e-13, saveat=1e-9)
     @info "Done."
     
     return NamedTuple(Base.@locals)
 end
 
+
+"""
+A struct to contain the model parameters.
+"""
 @kwdef struct Parameters{T}
     "Number of cells"
     n::Int
@@ -217,10 +228,6 @@ function derivs!(du, u, (aux, params), t)
     # A variable velocity
     v1 = fix_v ? v : velocity(+1, Etip, R)
 
-    if rand() < 0.001
-        @show t ztip[] Etip ne1 v1
-    end
-    
     @tturbo for i in 1:n
         dq[i] = co.elementary_charge * E_MOBILITY * (E[i] * ne[i] - E[i + 1] * ne[i + 1]) / dz
     end
