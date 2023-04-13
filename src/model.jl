@@ -7,52 +7,63 @@ const ATTACHMENT_FIELD = 3e6
 
 """
 A struct to contain the model parameters.
+
+The default values of the parameters are those used in the paper.
 """
 @kwdef struct Parameters{T}
     "Number of cells"
-    n::Int
+    n::Int = 8000
 
-    "Domain length"
-    H::T
+    "Domain length (m)"
+    H::T = 8.192e-2
  
-    "Cell length"
+    "Side length (m)"
+    L::T = 4.096e-2
+
+    "Cell length (m)"
     dz::T = H / n
     
-    "Streamer radius"
-    R::T
+    "Streamer radius (m)"
+    R::T = 1e-3
 
-    "Background field"
-    eb::T
+    "Background field (V/m)"
+    eb::T = 2.5e6
     
     "Number of streamers"
     nstr::Int
 
-    "Cross-sectional area"
-    L::T
-
-    "Field over-screening length"
+    "Starting location of the front (ztip) (m)"
+    start::T = 5e-3
+    
+    "Field over-screening decay rate (1/length) (1/m)"
     k::T = 1 / R
     
     "1 / fraction of area covered by streamers"
     alpha::T = L^2 / (nstr * π * R^2)
 
-    "Artificial length-scale for ionization"
+    "Artificial length-scale for ionization (m)"
     delta::T = R
 
-    "Constant velocity (if selected)"
+    "Constant velocity (if selected) (m/s)"
     v::T = 1.3e6
 
-    "Electron density inside the streamer"
+    "Electron density inside the streamer (1/m3)"
     neinside::T = 5e21
     
-    "Constant tip electron density (if selected)"
+    "Constant tip electron density (if selected) (1/m3)"
     n0::T = neinside * nstr * π * R^2 / L^2
 
+    "Electron density in the initial (seed) front (1/m3)"
+    nseed::T = n0 / 100
+    
     "Set a constant electron density at the tip"
     fix_netip::Bool = true
 
     "Set a constant velocity"
     fix_v::Bool = false
+
+    "Final simulation time (s)"
+    tend::T = 10e-9
 end
 
 
@@ -116,8 +127,7 @@ function ematrix(n, dz, k)
         else
             # Dirichlet
             A[i, i] -= co.epsilon_0 / dz^2
-        end
-        
+        end        
     end
 
     return factorize(A)
