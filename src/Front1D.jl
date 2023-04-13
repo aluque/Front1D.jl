@@ -18,6 +18,7 @@ const ATTACHMENT_ALPHA = 2000.0
 const ATTACHMENT_FIELD = 3e6
 
 include("naidis.jl")
+include("plot.jl")
 
 function main(;n=8000, H=0.08, R=1e-3, nstr=5, L=4e-2, eb=2.5e6, start=5e-3, tend=15e-9)
     T = Float64
@@ -136,6 +137,10 @@ function AuxFields{T}(params) where T
     AuxFields{T, typeof(segbuf), typeof(A0), typeof(A1)}(zc, zf, jz, E, phi0, phi1, segbuf, A0, A1)
 end
 
+
+"""
+Compute a matrix factorization to solve the Poisson / Helmholtz problem.
+"""
 function ematrix(n, dz, k)
     (dz, k) = promote(dz, k)
     A = zeros(typeof(dz), n, n)
@@ -161,7 +166,9 @@ function ematrix(n, dz, k)
     return factorize(A)
 end
 
-
+"""
+Calculate the electric field due to charge q and store it in aux.E.
+"""
 function poisson!(aux, params, q)
     (;n, dz, eb, alpha) = params
     
@@ -180,6 +187,11 @@ function poisson!(aux, params, q)
 end
 
 
+"""
+Compute the derivatives of all variables in the model stored in `u` and store them in `du`.
+Requires `aux` and `params` passed as a tuple in the third argument.  Time is received for 
+compatibility the the DiffEq API but ignored.
+"""
 function derivs!(du, u, (aux, params), t)
     (q, ne, ztip) = u.x
     (dq, dne, dztip) = du.x
@@ -205,7 +217,9 @@ function derivs!(du, u, (aux, params), t)
     # A variable velocity
     v1 = fix_v ? v : velocity(+1, Etip, R)
 
-    #@show t Etip ne1
+    if rand() < 0.001
+        @show t ztip[] Etip ne1 v1
+    end
     
     @tturbo for i in 1:n
         dq[i] = co.elementary_charge * E_MOBILITY * (E[i] * ne[i] - E[i + 1] * ne[i + 1]) / dz
@@ -232,82 +246,6 @@ Base.@assume_effects :effect_free @inline function ionizationint(emax)
 end
 
 
-# ========================
-# PLOT FUNCTIONS
-# ========================
-function plot_field(sol; norm=false, kw...)
-    (aux, params) = sol.prob.p
-    (;H, n, nstr) = params
-    (;zf) = aux
-
-    if norm
-        @warn "norm keywork is ignored"
-    end
-    
-    for u in sol.u
-        (q, ne, ztip) = u.x
-
-        poisson!(aux, params, q)
-        plt.plot(zf, aux.E; kw...)
-    end        
-end
-
-function plot_q(sol; norm=false, kw...)
-    (aux, params) = sol.prob.p
-    (;H, n, nstr) = params
-    (;zc) = aux
-
-    for u in sol.u
-        (q, ne, ztip) = u.x
-        f = norm ? 1 / nstr : oneunit(1 / nstr)
-
-        plt.plot(zc, f * q; kw...)
-    end        
-end
-
-function plot_ne(sol; norm=false, kw...)
-    (aux, params) = sol.prob.p
-    (;H, n, nstr) = params
-    (;zf) = aux
-
-    for u in sol.u
-        (q, ne, ztip) = u.x
-        f = norm ? 1 / nstr : oneunit(1 / nstr)
-
-        plt.plot(zf, f * ne; kw...)
-    end        
-end
-
-function plot_ztip(sol; kw...)
-    (aux, params) = sol.prob.p
-    (;H, n) = params
-    (;zf) = aux
-
-    ztip = map(sol.u) do u
-        (q, ne, ztip) = u.x
-
-        poisson!(aux, params, q)
-        imax = argmax(aux.E)
-        return zf[imax]
-    end
-    plt.plot(sol.t, ztip; kw...)
-end
-
-function plot_v(sol; kw...)
-    (aux, params) = sol.prob.p
-    (;H, n) = params
-    (;zf) = aux
-
-    ztip = map(sol.u) do u
-        (q, ne, ztip) = u.x
-
-        poisson!(aux, params, q)
-        imax = argmax(aux.E)
-        return zf[imax]
-    end
-    t1 = @. (0.5 * (sol.t[begin:end - 1] + sol.t[begin + 1:end]))
-    plt.plot(t1, diff(ztip) ./ diff(sol.t); kw...)
-end
 
 
 end # module Front1D
