@@ -12,9 +12,8 @@ using QuadGK
 using PyPlot
 using LaTeXStrings
 
-using Logging: global_logger
+using Logging: global_logger, with_logger
 using TerminalLoggers: TerminalLogger
-global_logger(TerminalLogger())
 
 
 include("model.jl")

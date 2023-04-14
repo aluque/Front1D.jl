@@ -2,62 +2,24 @@
 Run simulations of the model and produce the plots used in the paper.
 """
 function main(;results=[])
+
     try
         plt.matplotlib.pyplot.style.use("granada")
     catch exc
         @warn "Unable to load matplotlib style.  This is fine but pictures will be uglier."
     end
-
+    
     number_of_streamers = [2, 5]
-
+    @info "Running simulations with" number_of_streamers
+    
     if isempty(results)
         # Passing results we avoid having to rerun the simulations.
-        results = map(nstr -> simulate(Parameters(;nstr, R=1e-3)), number_of_streamers)
+        results = map(nstr -> simulate(Parameters(;nstr)), number_of_streamers)
     end
     
-    plotkw = Dict(2 => (c="k", lw=1.25, dashes=(5, 1)),
-                  5 => (c="#ff5555", lw=1.25))
+    paper_figure(number_of_streamers, results)
     
-    plt.figure("Simplified model", figsize=(8, 6))
 
-    # plot electric field
-    plt.subplot(3, 1, 1)
-    plt.subplots_adjust(top=0.95, hspace=0.1)
-    for i in eachindex(number_of_streamers)
-        nstr = number_of_streamers[i]
-        sol = results[i]
-        kw = plotkw[nstr]
-
-        plot_field(sol; kw...)
-    end
-    plt.semilogy()
-    plt.ylabel(L"$E_{int}$ (V/m)")
-    noxticks()
-    
-    # plot charge
-    plt.subplot(3, 1, 2)
-    for i in eachindex(number_of_streamers)
-        nstr = number_of_streamers[i]
-        sol = results[i]
-        kw = plotkw[nstr]
-
-        plot_ne(sol; norm=true, kw...)
-    end
-    plt.ylabel(L"$\bar{n}_e$ (10$^{17}$ m$^{-3}$)")
-    noxticks()
-    
-    # plot charge
-    plt.subplot(3, 1, 3)
-    for i in eachindex(number_of_streamers)
-        nstr = number_of_streamers[i]
-        sol = results[i]
-        kw = plotkw[nstr]
-
-        plot_q(sol; norm=true, kw...)
-    end
-    plt.ylabel(L"$\bar{q}$ (10$^{-3}$ Cm$^{-3}$)")
-    plt.xlabel(L"$z$ (cm)")
-    
     # return everything in scope
     return NamedTuple(Base.@locals())
 end
@@ -87,7 +49,11 @@ function simulate(params)
 
     prob = ODEProblem(derivs!, u0, (0.0, params.tend), (aux, params))
 
-    sol = solve(prob, Midpoint(), dtmax=1e-13, saveat=2e-9, progress=true)
+    local sol
+    with_logger(TerminalLogger()) do
+        sol = solve(prob, Midpoint(), dtmax=1e-13, saveat=10e-9, progress=true)
+    end
+    
     @info "Done."
     
     return sol

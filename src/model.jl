@@ -24,7 +24,7 @@ The default values of the parameters are those used in the paper.
     dz::T = H / n
     
     "Streamer radius (m)"
-    R::T = 5e-4
+    R::T = 1e-3
 
     "Background field (V/m)"
     eb::T = 2.5e6
@@ -66,7 +66,7 @@ The default values of the parameters are those used in the paper.
     fix_v::Bool = false
 
     "Final simulation time (s)"
-    tend::T = 30e-9
+    tend::T = 40e-9
 end
 
 
